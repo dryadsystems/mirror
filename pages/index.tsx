@@ -7,7 +7,8 @@ import { Navbar } from '../components/navbar';
 import { ExpandButton, Menu } from '../components/expand_button';
 import { ArtistPane } from '../components/panes/artists';
 
-const URL = 'wss://qux1wo0gzwajni-64410bc1-8080.proxy.runpod.io/ws';
+const URL = process.env.MIRRORFRAME_URL ?? 'wss://otgmvl9loyr63q-64410b9e-8080.proxy.runpod.io/ws';
+
 const leftMenus: Menu[] = ['history', 'params'];
 const rightMenus: Menu[] = ['artists'];
 
