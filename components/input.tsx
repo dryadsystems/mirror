@@ -8,7 +8,7 @@ export function Input({
   setDebouncedPrompt: (value: string) => void;
   loading: boolean;
 }) {
-  const [prompt, setPrompt] = useDebouncedState('', 200);
+  const [prompt, setPrompt] = useDebouncedState('', 5);
 
   useEffect(() => {
     setDebouncedPrompt(prompt);
