@@ -11,6 +11,7 @@ processes = []
 
 [env]
   PORT = "8080"
+  NEXT_PUBLIC_MIRRORFRAME_URL="https://umdixnbiznzi1p-8080.proxy.runpod.net/"
 
 [experimental]
   allowed_public_ports = []
