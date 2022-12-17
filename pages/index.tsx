@@ -7,10 +7,6 @@ import { Navbar } from '../components/navbar';
 import { ExpandButton, Menu } from '../components/expand_button';
 import { ArtistPane } from '../components/panes/artists';
 
-const URL =
-  process.env.MIRRORFRAME_URL ??
-  (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws';
-
 const leftMenus: Menu[] = ['history', 'params'];
 const rightMenus: Menu[] = ['artists'];
 
@@ -34,7 +30,9 @@ export default function HomePage() {
 
   const isBrowser = typeof window !== 'undefined';
 
-  const ws = useMemo(() => (isBrowser ? new WebSocket(URL) : null), []);
+  const ws = useMemo(() => (isBrowser ? new WebSocket(
+    (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws') : null
+  ), []);
 
   function hideImage() {
     setVisibleState(false);
