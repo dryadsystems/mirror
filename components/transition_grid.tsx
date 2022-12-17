@@ -34,7 +34,7 @@ export function staggerAnimate(on: boolean) {
   anime({
     targets: '.tile',
     opacity: on ? 1 : 0,
-    delay: anime.stagger(40, { //this should be adjustible?
+    delay: anime.stagger(25, { //this should be adjustible?
       grid: [cols, rows],
       from: 'center',
     }),

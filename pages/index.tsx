@@ -10,6 +10,16 @@ import { ArtistPane } from '../components/panes/artists';
 const leftMenus: Menu[] = ['history', 'params'];
 const rightMenus: Menu[] = ['artists'];
 
+function openSocket() {
+    console.log(process.env.NEXT_PUBLIC_MIRRORFRAME_URL)
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  const window_url =
+    (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws';
+  return new WebSocket(process.env.NEXT_PUBLIC_MIRRORFRAME_URL?? window_url);
+}
+
 export default function HomePage() {
   const [prompt, setPrompt] = useState('');
   const [lastSubmitted, setLastSubmitted] = useState('');
@@ -30,9 +40,7 @@ export default function HomePage() {
 
   const isBrowser = typeof window !== 'undefined';
 
-  const ws = useMemo(() => (isBrowser ? new WebSocket(
-    (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws') : null
-  ), []);
+  const ws = useMemo(openSocket, []);
 
   function hideImage() {
     setVisibleState(false);
@@ -42,7 +50,7 @@ export default function HomePage() {
       new Promise((resolve) => {
         setTimeout(() => {
           resolve();
-        }, 1500);
+        }, 150);
       })
     );
   }
@@ -68,7 +76,7 @@ export default function HomePage() {
         setSocketState('ready');
         setResponseTime(Date.now());
         console.log('Response time', responseTime - submitTime);
-        console.log(parsed.gen_time)
+        console.log(parsed.gen_time);
         setSubmitTime(nextSubmit);
       });
     }
@@ -98,7 +106,7 @@ export default function HomePage() {
         ws.send(JSON.stringify({ prompt: promptWithArtist }));
         setTimeout(() => {
           hideImage();
-        }, 1100);
+        }, 300);
         setNextSubmitTime(Date.now());
         setLastSubmitted(promptWithArtist);
       }
