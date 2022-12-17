@@ -63,11 +63,12 @@ export default function HomePage() {
   useEffect(() => {
     if (ws) {
       ws.addEventListener('message', async ({ data }) => {
-        await showImage(`url(${data})`);
+        let parsed = JSON.parse(data);
+        await showImage(`url(${parsed.image})`);
         setSocketState('ready');
         setResponseTime(Date.now());
         console.log('Response time', responseTime - submitTime);
-
+        console.log(parsed.gen_time)
         setSubmitTime(nextSubmit);
       });
     }
