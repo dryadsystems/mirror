@@ -71,14 +71,25 @@ export default function HomePage() {
   useEffect(() => {
     if (ws) {
       ws.addEventListener('message', async ({ data }) => {
-        let parsed = JSON.parse(data);
-        await showImage(`url(${parsed.image})`);
-        setSocketState('ready');
-        setResponseTime(Date.now());
-        console.log('Response time', responseTime - submitTime);
-        console.log(parsed.gen_time);
-        setSubmitTime(nextSubmit);
+          if (data.substring(0, 4) === "pong") {
+            var elapsed_ms = Date.now() % 86400000 - parseInt(data.substring(5), 10);
+            console.log("ws RTT " + elapsed_ms + " ms\n");
+          } else {
+            let parsed = JSON.parse(data);
+            await showImage(`url(${parsed.image})`);
+            setSocketState('ready');
+            setResponseTime(Date.now());
+            console.log('Response time', responseTime - submitTime);
+            console.log(parsed.gen_time);
+            setSubmitTime(nextSubmit);
+          }
       });
+      setInterval(function () {
+        if (ws.readyState === 1) {
+          var message = "ping " + Date.now() % 86400000;
+          ws.send(message);
+        }
+      }, 2000);
     }
   }, [ws]);
 
