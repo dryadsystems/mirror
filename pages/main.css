@@ -6,6 +6,14 @@ body, html{
     background-color: #2f1f70 !important;
 }
 
+.visible {
+    opacity: 1;
+}
+
+.invisible {
+    opacity: 0;
+}
+
 .img-wrapper{
     height: 532px;
     width: 532px;

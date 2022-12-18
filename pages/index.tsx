@@ -16,27 +16,75 @@ interface FadeState {
   bottomImage: string;
 }
 
+interface Sent {
+  prompt: string | null;
+  time: number | null;
+}
+interface Latency {
+  gen: number;
+  net: number;
+}
+
 const transparent =
   'data:image/svg;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiPjwvc3ZnPgo=';
 
+function CrossFadedImages({ fadeState }: { fadeState: FadeState }) {
+  const style: CSSProperties = {
+    transition: 'opacity 1s linear',
+    position: 'absolute',
+    // top: "5%",
+    // left: "5%",
+    // width: "512px",
+    // height: "512px",
+  };
+  console.log('rendering faded');
+  return (
+    <div className="img-wrapper" style={{ position: 'relative', backgroundColor: 'black' }}>
+      <div style={style}>
+        <Image
+          id="imoge"
+          alt="imoge"
+          src={fadeState.topImage}
+          className={fadeState.topVisible ? 'visible' : 'invisible'}
+          height="512px"
+          width="512px"
+        ></Image>
+      </div>
+      <div style={style}>
+        <Image
+          id="imoge2"
+          alt="imoge"
+          src={fadeState.bottomImage}
+          className={fadeState.bottomVisible ? 'visible' : 'invisible'}
+          height="512px"
+          width="512px"
+        ></Image>
+      </div>
+      <br />
+    </div>
+  );
+}
+
 export default function HomePage() {
   const [prompt, setPrompt] = useState('');
-  const [lastSubmitted, setLastSubmitted] = useState('');
+  // const [lastSubmitted, setLastSubmitted] = useState('');
   const [socketState, setSocketState] = useState<'generating' | 'ready'>('ready');
 
-  const [visibleState, setVisibleState] = useState(false);
-  const [hideAnimationPromise, setHideAnimationPromise] = useState<Promise<void> | null>(null);
+  // const [visibleState, setVisibleState] = useState(false);
+  // const [hideAnimationPromise, setHideAnimationPromise] = useState<Promise<void> | null>(null);
 
   const [fadeState, setFadeState] = useState<FadeState>({
-    topVisible: true,
-    bottomVisible: false,
+    topVisible: false,
+    bottomVisible: true,
     topImage: transparent,
     bottomImage: transparent,
   });
+  const [lastSent, setLastSent] = useState<Sent>({ prompt: null, time: null });
+  const [latency, setLatency] = useState<Latency | null>(null);
 
-  const [nextSubmit, setNextSubmitTime] = useState(0);
-  const [submitTime, setSubmitTime] = useState(0);
-  const [responseTime, setResponseTime] = useState(0);
+  // const [nextSubmit, setNextSubmitTime] = useState(0);
+  // const [submitTime, setSubmitTime] = useState(0);
+  // const [responseTime, setResponseTime] = useState(0);
 
   const [expanded, setExpanded] = useState<Menu>('none');
   const [history, setHistory] = useState<{ prompt: string; response: string }[]>([]);
@@ -53,61 +101,33 @@ export default function HomePage() {
     return new WebSocket(process.env.NEXT_PUBLIC_MIRRORFRAME_URL ?? window_url);
   }, []);
 
-  const style: CSSProperties = {
-    transition: 'opacity 1s linear',
-    position: 'absolute',
-    // top: "5%",
-    // left: "5%",
-    // width: "512px",
-    // height: "512px",
-  };
-
-  // function hideImage() {
-  //   setVisibleState(false);
-  //   staggerAnimate(false);
-
-  //   setHideAnimationPromise(
-  //     new Promise((resolve) => {
-  //       setTimeout(() => {
-  //         resolve();
-  //       }, 150);
-  //     })
-  //   );
-  // }
-
-  // async function showImage(image: string) {
-  //   if (hideAnimationPromise) {
-  //     console.log('waiting....');
-  //     await hideAnimationPromise;
-  //   }
-  //   await hideAnimationPromise;
-  //   if (isBrowser) {
-  //     document.documentElement.style.setProperty('--image', image);
-  //   }
-  //   setVisibleState(true);
-  //   staggerAnimate(true);
-  // }
-
   useEffect(() => {
     if (ws) {
+      // console.log('adding');
+      // ws.addEventListener('open', (event) => {
+      //   console.log('ws opened');
+      //   getAndSendPrompt();
+      // });
       ws.addEventListener('message', async ({ data }) => {
         if (data.substring(0, 4) === 'pong') {
-          if (Math.random() < 0.1) {
-            // sample 10% of pings
-            var elapsed_ms = (Date.now() % 86400000) - parseInt(data.substring(5), 10);
-            console.log('ws RTT ' + elapsed_ms + ' ms\n');
-          }
+          // if (Math.random() < 0.1) {
+          //   // sample 10% of pings
+          //   var elapsed_ms = (Date.now() % 86400000) - parseInt(data.substring(5), 10);
+          //   console.log('ws RTT ' + elapsed_ms + ' ms\n');
+          // }
         } else {
           let parsed = JSON.parse(data);
-          console.log('fadeState is', fadeState);
-          const imageUpdate = fadeState.topVisible
-            ? { bottomImage: parsed.image }
-            : { topImage: parsed.image };
-          setFadeState({
-            ...fadeState,
-            ...imageUpdate,
-            topVisible: !fadeState.topVisible,
-            bottomVisible: !fadeState.bottomVisible,
+          setFadeState((fadeState) => {
+            console.log('fadeState is', fadeState);
+            const imageUpdate = fadeState.topVisible
+              ? { bottomImage: parsed.image }
+              : { topImage: parsed.image };
+            return {
+              ...fadeState,
+              ...imageUpdate,
+              topVisible: !fadeState.topVisible,
+              bottomVisible: !fadeState.bottomVisible,
+            };
           });
           // this will be misleading bc setFadeState is enqueued but not rendered yet
           // console.log('now fadeState is', fadeState);
@@ -115,10 +135,22 @@ export default function HomePage() {
           // await showImage(`url(${parsed.image})`);
 
           setSocketState('ready');
-          setResponseTime(Date.now());
-          console.log('Response time', responseTime - submitTime);
-          console.log(parsed.gen_time);
-          setSubmitTime(nextSubmit);
+          console.timeEnd('generate');
+          console.log(
+            'last sent',
+            lastSent.time,
+            'now',
+            Date.now(),
+            'e2e latency:',
+            Date.now() - lastSent.time,
+            'gen:',
+            parsed.gen_time
+          );
+          setLatency({
+            gen: parsed.gen_time,
+            net: Date.now() - lastSent.time - parsed.gen_time,
+          });
+          // getAndSendPrompt();
         }
       });
       setInterval(function () {
@@ -127,6 +159,7 @@ export default function HomePage() {
           ws.send(message);
         }
       }, 2000);
+      setInterval(onPromptChange(prompt), 2000)
     }
   }, [ws]);
 
@@ -135,33 +168,53 @@ export default function HomePage() {
     onPromptChange(prompt);
   }, [artist]);
 
+  // function getAndSendPrompt() {
+  //   console.log('getting and sending');
+  //   let interval = setInterval(function () {
+  //     // console.log(ws)
+  //     const promptWithArtist = artist ? `${prompt} by ${artist}` : prompt;
+  //     if (prompt && promptWithArtist !== lastSent.prompt) {
+  //       console.log(ws, socketState);
+  //       if (socketState === 'ready' && ws.readyState === 1) {
+  //         clearInterval(interval);
+  //         setLastSent({ prompt: promptWithArtist, time: Date.now() });
+  //         setSocketState('generating');
+  //         const params = JSON.stringify({ prompt: promptWithArtist });
+  //         console.log('Sending', params);
+  //         ws.send(params);
+  //       }
+  //     }
+  //   }, 100); // maybe longer? maybe this is inefficient?
+  // }
+  const [sentLog, updateSentLog] = useState([]);
+
   function onPromptChange(prompt: string) {
     if (prompt.length == 0) {
       // hideImage();
       return;
     }
-
     setPrompt(prompt);
-
     const promptWithArtist = artist ? `${prompt} by ${artist}` : prompt;
 
     console.log('Prompt changed to', promptWithArtist);
-    if (promptWithArtist !== lastSubmitted && socketState === 'ready') {
+    if (promptWithArtist !== lastSent.prompt && socketState === 'ready') {
       console.log(ws);
       if (ws && ws.readyState === 1) {
         setSocketState('generating');
-        const params = JSON.stringify({ prompt: promptWithArtist})
+        updateSentLog((log) => [...log, promptWithArtist]);
+        const params = JSON.stringify({ prompt: promptWithArtist });
         console.log('Sending', params);
-        ws.send(params);
         // setTimeout(() => {
         //   hideImage();
         // }, 300);
-        setNextSubmitTime(Date.now()); // wut
-        setLastSubmitted(promptWithArtist);
+        console.time('generate');
+        setLastSent({ prompt: promptWithArtist, time: Date.now() });
+        ws.send(params);
       }
     }
   }
 
+  const sentLogList = sentLog.map((prompt) => <li key={prompt}>{prompt}</li>);
   console.log('possibly rendering main');
   const mainPage = (
     <div
@@ -199,37 +252,12 @@ export default function HomePage() {
           />
         ))}
       </div>*/}
-      <div className="img-wrapper" style={{ position: 'relative', backgroundColor: 'black' }}>
-        {/*
-        <div style={{ zIndex: 2, position: 'absolute', width: '100%', height: '100%' }}>
-          <Grid />
-        </div>
-        <div style={{ zIndex: 0, position: 'absolute', width: '100%', height: '100%' }}>
-          <Animation />
-        </div>*/}
-        <div style={style}>
-          <Image
-            id="imoge"
-            alt="imoge"
-            src={fadeState.topImage}
-            style={{ opacity: fadeState.topVisible ? 1 : 0 }}
-            height="512px"
-            width="512px"
-          ></Image>
-        </div>
-        <div style={style}>
-          <Image
-            id="imoge2"
-            alt="imoge"
-            src={fadeState.bottomImage}
-            style={{ opacity: fadeState.bottomVisible ? 1 : 0 }}
-            height="512px"
-            width="512px"
-          ></Image>
-        </div>
-        <br />
-      </div>
+      <CrossFadedImages fadeState={fadeState} />
       <Input setDebouncedPrompt={onPromptChange} loading={socketState == 'generating'} />
+      <div style={{ color: '#a79369' }}>
+        {latency && `Generation latency: ${latency.gen}ms. Network latency: ${latency.net}`}
+      </div>
+      {<ul style={{ color: '#a79369' }}>{sentLogList}</ul>}
     </div>
   );
 
