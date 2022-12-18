@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState, CSSProperties } from 'react';
 import { useDebouncedState, useDebouncedValue } from '@mantine/hooks';
-// import Animation from '../components/bg_animation';
-// import { Grid, staggerAnimate } from '../components/transition_grid';
 import Image from 'next/image';
 import { Input } from '../components/input';
 import { Navbar } from '../components/navbar';
@@ -18,16 +16,9 @@ interface FadeState {
   bottomImage: string;
 }
 
-function openSocket() {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-  const window_url =
-    (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws';
-  return new WebSocket(process.env.NEXT_PUBLIC_MIRRORFRAME_URL ?? window_url);
-}
 const transparent =
   'data:image/svg;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiPjwvc3ZnPgo=';
+
 export default function HomePage() {
   const [prompt, setPrompt] = useState('');
   const [lastSubmitted, setLastSubmitted] = useState('');
@@ -53,7 +44,14 @@ export default function HomePage() {
 
   const isBrowser = typeof window !== 'undefined';
 
-  const ws = useMemo(openSocket, []);
+  const ws = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+    const window_url =
+      (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws';
+    return new WebSocket(process.env.NEXT_PUBLIC_MIRRORFRAME_URL ?? window_url);
+  }, []);
 
   const style: CSSProperties = {
     transition: 'opacity 1s linear',
@@ -94,7 +92,8 @@ export default function HomePage() {
     if (ws) {
       ws.addEventListener('message', async ({ data }) => {
         if (data.substring(0, 4) === 'pong') {
-          if (Math.random() < 0.1) { // sample 10% of pings
+          if (Math.random() < 0.1) {
+            // sample 10% of pings
             var elapsed_ms = (Date.now() % 86400000) - parseInt(data.substring(5), 10);
             console.log('ws RTT ' + elapsed_ms + ' ms\n');
           }
@@ -151,18 +150,19 @@ export default function HomePage() {
       console.log(ws);
       if (ws && ws.readyState === 1) {
         setSocketState('generating');
-        console.log('Sending', JSON.stringify({ prompt: promptWithArtist, ddim_steps: 25 }));
-        ws.send(JSON.stringify({ prompt: promptWithArtist }));
+        const params = JSON.stringify({ prompt: promptWithArtist})
+        console.log('Sending', params);
+        ws.send(params);
         // setTimeout(() => {
         //   hideImage();
         // }, 300);
-        setNextSubmitTime(Date.now());
+        setNextSubmitTime(Date.now()); // wut
         setLastSubmitted(promptWithArtist);
       }
     }
   }
 
-  console.log("possibly rendering main")
+  console.log('possibly rendering main');
   const mainPage = (
     <div
       style={{
