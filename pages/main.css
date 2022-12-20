@@ -6,6 +6,9 @@ body, html{
     background-color: #2f1f70 !important;
 }
 
+#imoge, #imoge2 {
+    transition: opacity 1s linear;
+}
 .visible {
     opacity: 1;
 }

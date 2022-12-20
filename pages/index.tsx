@@ -42,6 +42,7 @@ function CrossFadedImages({ fadeState }: { fadeState: FadeState }) {
     <div className="img-wrapper" style={{ position: 'relative', backgroundColor: 'black' }}>
       <div style={style}>
         <Image
+          key="imoge"
           id="imoge"
           alt="imoge"
           src={fadeState.topImage}
@@ -52,6 +53,7 @@ function CrossFadedImages({ fadeState }: { fadeState: FadeState }) {
       </div>
       <div style={style}>
         <Image
+          key="imoge"
           id="imoge2"
           alt="imoge"
           src={fadeState.bottomImage}
@@ -159,7 +161,7 @@ export default function HomePage() {
           ws.send(message);
         }
       }, 2000);
-      setInterval(onPromptChange(prompt), 2000)
+      setInterval(onPromptChange(prompt), 2000);
     }
   }, [ws]);
 
@@ -209,6 +211,7 @@ export default function HomePage() {
         // }, 300);
         console.time('generate');
         setLastSent({ prompt: promptWithArtist, time: Date.now() });
+        console.log("updated last sent")
         ws.send(params);
       }
     }
