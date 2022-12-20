@@ -47,10 +47,10 @@ export function ArtistBox({
   const reformattedName = name.split(', ').reverse().join(' ');
 
   function clickFunc() {
-    if (active === name) {
+    if (active === reformattedName) {
       setActive(null);
     } else {
-      setActive(name);
+      setActive(reformattedName);
     }
   }
 

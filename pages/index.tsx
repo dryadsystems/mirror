@@ -8,14 +8,14 @@ import { ExpandButton, Menu } from '../components/expand_button';
 import { ArtistPane } from '../components/panes/artists';
 
 //const leftMenus: Menu[] = ['history', 'params'];
-const rightMenus: Menu[] = ['artists'];
+const rightMenus: Menu[] = ['artists', 'history'];
 
 interface FadeState {
   topVisible: boolean;
   bottomVisible: boolean;
   topImage: string;
   bottomImage: string;
-  id: number;
+  id: number | null;
 }
 
 interface Sent {
@@ -29,6 +29,16 @@ interface Latency {
 
 const transparent =
   'data:image/svg;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiPjwvc3ZnPgo=';
+
+function History({ sentLog }: { sentLog: string[] }) {
+  const sentLogList = sentLog.map((prompt) => <li key={prompt}>{prompt}</li>);
+  return (
+    <div className="sidebar">
+      <h1>History</h1>
+      <div>{<ul style={{ color: '#a79369' }}>{sentLogList}</ul>}</div>
+    </div>
+  );
+}
 
 function CrossFadedImages({ fadeState }: { fadeState: FadeState }) {
   const style: CSSProperties = {
@@ -86,6 +96,7 @@ export default function HomePage() {
     bottomVisible: true,
     topImage: transparent,
     bottomImage: transparent,
+    id: null,
   });
   const [lastSent, setLastSent] = useState<Sent>({ prompt: null, time: null });
   const [latency, setLatency] = useState<Latency | null>(null);
@@ -147,12 +158,13 @@ export default function HomePage() {
           console.log(
             'last sent',
             lastSent,
-            lastSent.time,
+            //lastSent?.time,
             parsed.id,
             'now',
             Date.now(),
             'e2e latency:',
-            Date.now() - lastSent.time,
+            //Date.now() - lastSent?.time ?? 0,
+            Date.now() - parsed.id,
             'gen:',
             parsed.gen_time
           );
@@ -169,7 +181,7 @@ export default function HomePage() {
           ws.send(message);
         }
       }, 2000);
-      setInterval(onPromptChange(prompt), 2000);
+      setInterval(() => onPromptChange(prompt), 2000);
     }
   }, [ws]);
 
@@ -196,7 +208,7 @@ export default function HomePage() {
   //     }
   //   }, 100); // maybe longer? maybe this is inefficient?
   // }
-  const [sentLog, updateSentLog] = useState([]);
+  const [sentLog, updateSentLog] = useState<string[]>([]);
 
   function onPromptChange(prompt: string) {
     if (prompt.length == 0) {
@@ -213,7 +225,7 @@ export default function HomePage() {
         setSocketState('generating');
         setLastSent((x) => {console.log("setting last sent"); return { prompt: promptWithArtist, time: Date.now() }});
         updateSentLog((log) => [...log, promptWithArtist]);
-        const params = JSON.stringify({ prompt: promptWithArtist; id: Date.now() });
+        const params = JSON.stringify({ prompt: promptWithArtist, id: Date.now() });
         console.log('Sending', params);
         // setTimeout(() => {
         //   hideImage();
@@ -291,7 +303,9 @@ export default function HomePage() {
       }}
     >
       {expanded === 'artists' && <ArtistPane artist={artist} setArtist={setArtist} />}
+      {expanded === 'history' && <History sentLog={sentLog} />}
     </div>
+
   );
 
   return (
