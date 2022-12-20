@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, CSSProperties } from 'react';
 import { useDebouncedState, useDebouncedValue } from '@mantine/hooks';
 import Image from 'next/image';
+import Animation from '../components/bg_animation';
 import { Input } from '../components/input';
 import { Navbar } from '../components/navbar';
 import { ExpandButton, Menu } from '../components/expand_button';
@@ -40,29 +41,33 @@ function CrossFadedImages({ fadeState }: { fadeState: FadeState }) {
   console.log('rendering faded');
   return (
     <div className="img-wrapper" style={{ position: 'relative', backgroundColor: 'black' }}>
-      <div style={style}>
-        <Image
-          key="imoge"
-          id="imoge"
-          alt="imoge"
-          src={fadeState.topImage}
-          className={fadeState.topVisible ? 'visible' : 'invisible'}
-          height="512px"
-          width="512px"
-        ></Image>
+       <div style={{ zIndex: 2, position: 'absolute', width: '100%', height: '100%' }}>
+        <div style={style}>
+          <Image
+            key="imoge"
+            id="imoge"
+            alt="imoge"
+            src={fadeState.topImage}
+            className={fadeState.topVisible ? 'visible' : 'invisible'}
+            height="512px"
+            width="512px"
+          ></Image>
+        </div>
+        <div style={style}>
+          <Image
+            key="imoge"
+            id="imoge2"
+            alt="imoge"
+            src={fadeState.bottomImage}
+            className={fadeState.bottomVisible ? 'visible' : 'invisible'}
+            height="512px"
+            width="512px"
+          ></Image>
+        </div>
       </div>
-      <div style={style}>
-        <Image
-          key="imoge"
-          id="imoge2"
-          alt="imoge"
-          src={fadeState.bottomImage}
-          className={fadeState.bottomVisible ? 'visible' : 'invisible'}
-          height="512px"
-          width="512px"
-        ></Image>
+      <div style={{ zIndex: 0, position: 'absolute', width: '100%', height: '100%' }}>
+        <Animation />
       </div>
-      <br />
     </div>
   );
 }
@@ -140,6 +145,7 @@ export default function HomePage() {
           console.timeEnd('generate');
           console.log(
             'last sent',
+            lastSent,
             lastSent.time,
             'now',
             Date.now(),
@@ -203,6 +209,7 @@ export default function HomePage() {
       console.log(ws);
       if (ws && ws.readyState === 1) {
         setSocketState('generating');
+        setLastSent((x) => {console.log("setting last sent"); return { prompt: promptWithArtist, time: Date.now() }});
         updateSentLog((log) => [...log, promptWithArtist]);
         const params = JSON.stringify({ prompt: promptWithArtist });
         console.log('Sending', params);
@@ -210,8 +217,7 @@ export default function HomePage() {
         //   hideImage();
         // }, 300);
         console.time('generate');
-        setLastSent({ prompt: promptWithArtist, time: Date.now() });
-        console.log("updated last sent")
+        console.log('updated last sent');
         ws.send(params);
       }
     }
