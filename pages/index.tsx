@@ -15,6 +15,7 @@ interface FadeState {
   bottomVisible: boolean;
   topImage: string;
   bottomImage: string;
+  id: number;
 }
 
 interface Sent {
@@ -147,6 +148,7 @@ export default function HomePage() {
             'last sent',
             lastSent,
             lastSent.time,
+            parsed.id,
             'now',
             Date.now(),
             'e2e latency:',
@@ -156,7 +158,7 @@ export default function HomePage() {
           );
           setLatency({
             gen: parsed.gen_time,
-            net: Date.now() - lastSent.time - parsed.gen_time,
+            net: Date.now() - parsed.id - parsed.gen_time,
           });
           // getAndSendPrompt();
         }
@@ -211,7 +213,7 @@ export default function HomePage() {
         setSocketState('generating');
         setLastSent((x) => {console.log("setting last sent"); return { prompt: promptWithArtist, time: Date.now() }});
         updateSentLog((log) => [...log, promptWithArtist]);
-        const params = JSON.stringify({ prompt: promptWithArtist });
+        const params = JSON.stringify({ prompt: promptWithArtist; id: Date.now() });
         console.log('Sending', params);
         // setTimeout(() => {
         //   hideImage();
