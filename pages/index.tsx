@@ -7,8 +7,8 @@ import { Navbar } from '../components/navbar';
 import { ExpandButton, Menu } from '../components/expand_button';
 import { ArtistPane } from '../components/panes/artists';
 
-//const leftMenus: Menu[] = ['history', 'params'];
-const rightMenus: Menu[] = ['artists', 'history'];
+const leftMenus: Menu[] = ['history']; //, 'params'];
+const rightMenus: Menu[] = ['artists'];
 
 interface FadeState {
   topVisible: boolean;
@@ -263,7 +263,6 @@ export default function HomePage() {
           />
         ))}
       </div>
-      {/*
       <div className="buttons" style={{ left: 0 }}>
         {leftMenus.map((menu) => (
           <ExpandButton
@@ -274,7 +273,7 @@ export default function HomePage() {
             direction={'left'}
           />
         ))}
-      </div>*/}
+      </div>
       <CrossFadedImages fadeState={fadeState} />
       <Input setDebouncedPrompt={onPromptChange} loading={socketState == 'generating'} />
       <div style={{ color: '#a79369' }}>
@@ -283,15 +282,17 @@ export default function HomePage() {
     </div>
   );
 
-  // const leftSideBar = (
-  //   <div
-  //     style={{
-  //       width: expanded === 'params' || expanded === 'history' ? '30%' : '0%',
-  //       transition: 'width 0.5s',
-  //       backgroundColor: 'rgba(0,0,0,0.5)',
-  //     }}
-  //   ></div>
-  // );
+  const leftSideBar = (
+    <div
+      style={{
+        width: expanded === 'params' || expanded === 'history' ? '20%' : '0%',
+        transition: 'width 0.5s',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+      }}
+    >
+      {expanded === 'history' && <History sentLog={sentLog} />}
+    </div>
+  );
 
   const rightSideBar = (
     <div
@@ -302,7 +303,6 @@ export default function HomePage() {
       }}
     >
       {expanded === 'artists' && <ArtistPane artist={artist} setArtist={setArtist} />}
-      {expanded === 'history' && <History sentLog={sentLog} />}
     </div>
 
   );
@@ -316,7 +316,7 @@ export default function HomePage() {
           flexDirection: 'row',
         }}
       >
-        {/*leftSideBar*/}
+        {leftSideBar}
         {mainPage}
         {rightSideBar}
       </div>
