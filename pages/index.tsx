@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, CSSProperties } from 'react';
 import { useDebouncedState, useDebouncedValue } from '@mantine/hooks';
 import Image from 'next/image';
 import Animation from '../components/bg_animation';
@@ -30,8 +30,8 @@ interface Latency {
 const transparent =
   'data:image/svg;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiPjwvc3ZnPgo=';
 
-function History({ sentLog }: { sentLog: string[] }) {
-  const sentLogList = sentLog.map((prompt) => <li key={prompt}>{prompt}</li>);
+function History({ sentLog }: { sentLog: { prompt: string; id: number }[] }) {
+  const sentLogList = sentLog.map((item) => <li key={item.id}>{item.prompt}</li>);
   return (
     <div className="sidebar">
       <h1>History</h1>
@@ -49,10 +49,9 @@ function CrossFadedImages({ fadeState }: { fadeState: FadeState }) {
     // width: "512px",
     // height: "512px",
   };
-  console.log('rendering faded');
   return (
     <div className="img-wrapper" style={{ position: 'relative', backgroundColor: 'black' }}>
-       <div style={{ zIndex: 2, position: 'absolute', width: '100%', height: '100%' }}>
+      <div style={{ zIndex: 2, position: 'absolute', width: '100%', height: '100%' }}>
         <div style={style}>
           <Image
             key="imoge"
@@ -84,6 +83,7 @@ function CrossFadedImages({ fadeState }: { fadeState: FadeState }) {
 }
 
 export default function HomePage() {
+  const inputEl = useRef(null)
   const [prompt, setPrompt] = useState('');
   // const [lastSubmitted, setLastSubmitted] = useState('');
   const [socketState, setSocketState] = useState<'generating' | 'ready'>('ready');
@@ -102,8 +102,7 @@ export default function HomePage() {
   const [latency, setLatency] = useState<Latency | null>(null);
 
   // const [nextSubmit, setNextSubmitTime] = useState(0);
-  // const [submitTime, setSubmitTime] = useState(0);
-  // const [responseTime, setResponseTime] = useState(0);
+  // const [submitTime, setSubmitTime] = useState(0); // const [responseTime, setResponseTime] = useState(0);
 
   const [expanded, setExpanded] = useState<Menu>('none');
   const [history, setHistory] = useState<{ prompt: string; response: string }[]>([]);
@@ -122,7 +121,6 @@ export default function HomePage() {
 
   useEffect(() => {
     if (ws) {
-      // console.log('adding');
       // ws.addEventListener('open', (event) => {
       //   console.log('ws opened');
       //   getAndSendPrompt();
@@ -148,11 +146,6 @@ export default function HomePage() {
               bottomVisible: !fadeState.bottomVisible,
             };
           });
-          // this will be misleading bc setFadeState is enqueued but not rendered yet
-          // console.log('now fadeState is', fadeState);
-
-          // await showImage(`url(${parsed.image})`);
-
           setSocketState('ready');
           console.timeEnd('generate');
           console.log(
@@ -172,7 +165,8 @@ export default function HomePage() {
             gen: parsed.gen_time,
             net: Date.now() - parsed.id - parsed.gen_time,
           });
-          // getAndSendPrompt();
+          console.log('got image, firing maybeSend');
+          maybeSend();
         }
       });
       setInterval(function () {
@@ -181,12 +175,13 @@ export default function HomePage() {
           ws.send(message);
         }
       }, 2000);
-      setInterval(() => onPromptChange(prompt), 2000);
+      // setInterval(() => onPromptChange(prompt), 2000);
     }
   }, [ws]);
 
   /* When artist changes, fire onPromptChange */
   useEffect(() => {
+    console.log('artist changed, firing', prompt)
     onPromptChange(prompt);
   }, [artist]);
 
@@ -208,37 +203,44 @@ export default function HomePage() {
   //     }
   //   }, 100); // maybe longer? maybe this is inefficient?
   // }
-  const [sentLog, updateSentLog] = useState<string[]>([]);
+  const [sentLog, updateSentLog] = useState<{ prompt: string; id: number }[]>([]);
+
+  function maybeSend() {
+    console.log('maybeSending, prompt is: ', prompt);
+    onPromptChange(prompt);
+  }
 
   function onPromptChange(prompt: string) {
-    if (prompt.length == 0) {
+    const _prompt = inputEl.current?.value ?? prompt
+    if (_prompt.length == 0) {
       // hideImage();
       return;
     }
     setPrompt(prompt);
-    const promptWithArtist = artist ? `${prompt} by ${artist}` : prompt;
+    const promptWithArtist = artist ? `${_prompt} by ${artist}` : _prompt;
 
     console.log('Prompt changed to', promptWithArtist);
     if (promptWithArtist !== lastSent.prompt && socketState === 'ready') {
       console.log(ws);
       if (ws && ws.readyState === 1) {
         setSocketState('generating');
-        setLastSent((x) => {console.log("setting last sent"); return { prompt: promptWithArtist, time: Date.now() }});
-        updateSentLog((log) => [...log, promptWithArtist]);
-        const params = JSON.stringify({ prompt: promptWithArtist, id: Date.now() });
+        setLastSent((x) => {
+          return { prompt: promptWithArtist, time: Date.now() };
+        });
+        const params = { prompt: promptWithArtist, id: Date.now() };
+        updateSentLog((log) => [...log, params]);
         console.log('Sending', params);
         // setTimeout(() => {
         //   hideImage();
         // }, 300);
         console.time('generate');
-        console.log('updated last sent');
-        ws.send(params);
+        ws.send(JSON.stringify(params));
       }
+    } else {
+      console.log('ignoring, prompt is same');
     }
   }
 
-  const sentLogList = sentLog.map((prompt) => <li key={prompt}>{prompt}</li>);
-  console.log('possibly rendering main');
   const mainPage = (
     <div
       style={{
@@ -275,7 +277,7 @@ export default function HomePage() {
         ))}
       </div>
       <CrossFadedImages fadeState={fadeState} />
-      <Input setDebouncedPrompt={onPromptChange} loading={socketState == 'generating'} />
+      <Input _ref={inputEl} setDebouncedPrompt={onPromptChange} loading={socketState == 'generating'} />
       <div style={{ color: '#a79369' }}>
         {latency && `Generation latency: ${latency.gen}ms. Network latency: ${latency.net}`}
       </div>
@@ -304,7 +306,6 @@ export default function HomePage() {
     >
       {expanded === 'artists' && <ArtistPane artist={artist} setArtist={setArtist} />}
     </div>
-
   );
 
   return (

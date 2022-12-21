@@ -4,9 +4,11 @@ import { useEffect } from 'react';
 export function Input({
   setDebouncedPrompt,
   loading,
+  _ref,
 }: {
   setDebouncedPrompt: (value: string) => void;
   loading: boolean;
+  _ref: any;
 }) {
   const [prompt, setPrompt] = useDebouncedState('', 100);
 
@@ -18,6 +20,7 @@ export function Input({
     <textarea
       onChange={(event) => setPrompt(event.target.value)}
       className={loading ? 'input-field loading' : 'input-field'}
+      ref={_ref}
     />
   );
 }
