@@ -28,7 +28,7 @@ interface Latency {
 }
 
 const transparent =
-  'data:image/svg;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiPjwvc3ZnPgo=';
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
 function History({ sentLog }: { sentLog: { prompt: string; id: number }[] }) {
   const sentLogList = sentLog.map((item) => <li key={item.id}>{item.prompt}</li>);
@@ -46,8 +46,6 @@ function CrossFadedImages({ fadeState }: { fadeState: FadeState }) {
     position: 'absolute',
     // top: "5%",
     // left: "5%",
-    // width: "512px",
-    // height: "512px",
   };
   return (
     <div className="img-wrapper" style={{ position: 'relative', backgroundColor: 'black' }}>
@@ -83,13 +81,9 @@ function CrossFadedImages({ fadeState }: { fadeState: FadeState }) {
 }
 
 export default function HomePage() {
-  const inputEl = useRef(null)
+  const inputEl = useRef(null);
   const [prompt, setPrompt] = useState('');
-  // const [lastSubmitted, setLastSubmitted] = useState('');
   const [socketState, setSocketState] = useState<'generating' | 'ready'>('ready');
-
-  // const [visibleState, setVisibleState] = useState(false);
-  // const [hideAnimationPromise, setHideAnimationPromise] = useState<Promise<void> | null>(null);
 
   const [fadeState, setFadeState] = useState<FadeState>({
     topVisible: false,
@@ -98,11 +92,9 @@ export default function HomePage() {
     bottomImage: transparent,
     id: null,
   });
+  const [sentLog, updateSentLog] = useState<{ prompt: string; id: number }[]>([]);
   const [lastSent, setLastSent] = useState<Sent>({ prompt: null, time: null });
   const [latency, setLatency] = useState<Latency | null>(null);
-
-  // const [nextSubmit, setNextSubmitTime] = useState(0);
-  // const [submitTime, setSubmitTime] = useState(0); // const [responseTime, setResponseTime] = useState(0);
 
   const [expanded, setExpanded] = useState<Menu>('none');
   const [history, setHistory] = useState<{ prompt: string; response: string }[]>([]);
@@ -151,12 +143,11 @@ export default function HomePage() {
           console.log(
             'last sent',
             lastSent,
-            //lastSent?.time,
+            'actual sent time',
             parsed.id,
             'now',
             Date.now(),
             'e2e latency:',
-            //Date.now() - lastSent?.time ?? 0,
             Date.now() - parsed.id,
             'gen:',
             parsed.gen_time
@@ -165,8 +156,6 @@ export default function HomePage() {
             gen: parsed.gen_time,
             net: Date.now() - parsed.id - parsed.gen_time,
           });
-          console.log('got image, firing maybeSend');
-          maybeSend();
         }
       });
       setInterval(function () {
@@ -181,45 +170,24 @@ export default function HomePage() {
 
   /* When artist changes, fire onPromptChange */
   useEffect(() => {
-    console.log('artist changed, firing', prompt)
+    console.log('artist changed, firing', prompt);
     onPromptChange(prompt);
   }, [artist]);
 
-  // function getAndSendPrompt() {
-  //   console.log('getting and sending');
-  //   let interval = setInterval(function () {
-  //     // console.log(ws)
-  //     const promptWithArtist = artist ? `${prompt} by ${artist}` : prompt;
-  //     if (prompt && promptWithArtist !== lastSent.prompt) {
-  //       console.log(ws, socketState);
-  //       if (socketState === 'ready' && ws.readyState === 1) {
-  //         clearInterval(interval);
-  //         setLastSent({ prompt: promptWithArtist, time: Date.now() });
-  //         setSocketState('generating');
-  //         const params = JSON.stringify({ prompt: promptWithArtist });
-  //         console.log('Sending', params);
-  //         ws.send(params);
-  //       }
-  //     }
-  //   }, 100); // maybe longer? maybe this is inefficient?
-  // }
-  const [sentLog, updateSentLog] = useState<{ prompt: string; id: number }[]>([]);
-
-  function maybeSend() {
-    console.log('maybeSending, prompt is: ', prompt);
+  useEffect(() => {
+    console.log('latency changed, firing', prompt);
     onPromptChange(prompt);
-  }
+  }, [latency]);
 
   function onPromptChange(prompt: string) {
-    const _prompt = inputEl.current?.value ?? prompt
+    const _prompt = prompt; //inputEl.current?.value ?? prompt;
     if (_prompt.length == 0) {
-      // hideImage();
       return;
     }
-    setPrompt(prompt);
+    setPrompt(_prompt);
     const promptWithArtist = artist ? `${_prompt} by ${artist}` : _prompt;
 
-    console.log('Prompt changed to', promptWithArtist);
+    console.log('Prompt changed to', promptWithArtist, 'last prompt was', lastSent);
     if (promptWithArtist !== lastSent.prompt && socketState === 'ready') {
       console.log(ws);
       if (ws && ws.readyState === 1) {
@@ -230,13 +198,10 @@ export default function HomePage() {
         const params = { prompt: promptWithArtist, id: Date.now() };
         updateSentLog((log) => [...log, params]);
         console.log('Sending', params);
-        // setTimeout(() => {
-        //   hideImage();
-        // }, 300);
         console.time('generate');
         ws.send(JSON.stringify(params));
       }
-    } else {
+    } else if (socketState !== 'ready') {
       console.log('ignoring, prompt is same');
     }
   }
@@ -277,7 +242,11 @@ export default function HomePage() {
         ))}
       </div>
       <CrossFadedImages fadeState={fadeState} />
-      <Input _ref={inputEl} setDebouncedPrompt={onPromptChange} loading={socketState == 'generating'} />
+      <Input
+        _ref={inputEl}
+        setDebouncedPrompt={onPromptChange}
+        loading={socketState == 'generating'}
+      />
       <div style={{ color: '#a79369' }}>
         {latency && `Generation latency: ${latency.gen}ms. Network latency: ${latency.net}`}
       </div>
