@@ -35,7 +35,7 @@ function History({ sentLog }: { sentLog: string[] }) {
   return (
     <div className="sidebar">
       <h1>History</h1>
-      <div>{<ul style={{ color: '#a79369' }}>{sentLogList}</ul>}</div>
+      <div className="artist-lists">{<ul style={{ color: '#a79369' }}>{sentLogList}</ul>}</div>
     </div>
   );
 }
@@ -280,7 +280,6 @@ export default function HomePage() {
       <div style={{ color: '#a79369' }}>
         {latency && `Generation latency: ${latency.gen}ms. Network latency: ${latency.net}`}
       </div>
-      {<ul style={{ color: '#a79369' }}>{sentLogList}</ul>}
     </div>
   );
 

@@ -12,5 +12,6 @@ module.exports = withBundleAnalyzer({
   },
   images: {
     domains: ['fqbyocakhbhchhfvnkcu.supabase.co'],
+    unoptimized: true,
   },
 });
