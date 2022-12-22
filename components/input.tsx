@@ -20,6 +20,7 @@ export function Input({
     <textarea
       onChange={(event) => setPrompt(event.target.value)}
       className={loading ? 'input-field loading' : 'input-field'}
+      placeholder="Mirror, mirror on the wall..."
       ref={_ref}
     />
   );
