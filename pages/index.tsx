@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, CSSProperties } from 'react';
-import { useDebouncedState, useDebouncedValue } from '@mantine/hooks';
+//import { useDebouncedState, useDebouncedValue } from '@mantine/hooks';
+import useSWRImmutable from 'swr';
 import Image from 'next/image';
 import Animation from '../components/bg_animation';
 import { Input } from '../components/input';
@@ -59,7 +60,7 @@ function CrossFadedImages({ fadeState }: { fadeState: FadeState }) {
             className={fadeState.topVisible ? 'visible' : 'invisible'}
             height="512px"
             width="512px"
-          ></Image>
+          />
         </div>
         <div style={style}>
           <Image
@@ -70,7 +71,7 @@ function CrossFadedImages({ fadeState }: { fadeState: FadeState }) {
             className={fadeState.bottomVisible ? 'visible' : 'invisible'}
             height="512px"
             width="512px"
-          ></Image>
+          />
         </div>
       </div>
       <div style={{ zIndex: 0, position: 'absolute', width: '100%', height: '100%' }}>
@@ -97,19 +98,28 @@ export default function HomePage() {
   const [latency, setLatency] = useState<Latency | null>(null);
 
   const [expanded, setExpanded] = useState<Menu>('none');
-  const [history, setHistory] = useState<{ prompt: string; response: string }[]>([]);
   const [artist, setArtist] = useState<string | null>(null);
 
-  const isBrowser = typeof window !== 'undefined';
+  const { data, mutate } = useSWRImmutable('https://metamirror.fly.dev/get_url', (url) =>
+    fetch(url).then((r) => r.json())
+  );
+
+  useEffect(() => {
+    if (data?.status !== 'ready') {
+      setTimeout(() => mutate(), 500);
+    }
+  }, [data, mutate]);
 
   const ws = useMemo(() => {
-    if (typeof window === 'undefined') {
+    console.log(data);
+    if (typeof window === 'undefined' || data?.status !== 'ready') {
       return null;
     }
-    const window_url =
-      (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws';
-    return new WebSocket(process.env.NEXT_PUBLIC_MIRRORFRAME_URL ?? window_url);
-  }, []);
+    // const window_url =
+    //   (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws';
+    // return new WebSocket(process.env.NEXT_PUBLIC_MIRRORFRAME_URL ?? window_url);
+    return new WebSocket(data.url.replace('http', 'ws') + '/ws');
+  }, [data]);
 
   useEffect(() => {
     if (ws) {
@@ -125,7 +135,7 @@ export default function HomePage() {
           //   console.log('ws RTT ' + elapsed_ms + ' ms\n');
           // }
         } else {
-          let parsed = JSON.parse(data);
+          const parsed = JSON.parse(data);
           setFadeState((fadeState) => {
             console.log('fadeState is', fadeState);
             const imageUpdate = fadeState.topVisible
@@ -160,7 +170,7 @@ export default function HomePage() {
       });
       setInterval(function () {
         if (ws.readyState === 1) {
-          var message = 'ping ' + (Date.now() % 86400000);
+          const message = 'ping ' + (Date.now() % 86400000);
           ws.send(message);
         }
       }, 2000);
@@ -226,7 +236,7 @@ export default function HomePage() {
             menu={menu}
             setExpanded={setExpanded}
             expanded={expanded}
-            direction={'right'}
+            direction="right"
           />
         ))}
       </div>
@@ -237,7 +247,7 @@ export default function HomePage() {
             menu={menu}
             setExpanded={setExpanded}
             expanded={expanded}
-            direction={'left'}
+            direction="left"
           />
         ))}
       </div>
@@ -245,9 +255,10 @@ export default function HomePage() {
       <Input
         _ref={inputEl}
         setDebouncedPrompt={onPromptChange}
-        loading={socketState == 'generating'}
+        loading={socketState === 'generating'}
       />
       <div style={{ color: '#a79369' }}>
+        {data?.message ?? 'Requesting worker URL...'}
         {latency && `Generation latency: ${latency.gen}ms. Network latency: ${latency.net}`}
       </div>
     </div>
