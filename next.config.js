@@ -14,4 +14,5 @@ module.exports = withBundleAnalyzer({
     domains: ['fqbyocakhbhchhfvnkcu.supabase.co'],
     unoptimized: true,
   },
+  output: 'standalone',
 });
