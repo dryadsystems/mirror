@@ -100,24 +100,25 @@ export default function HomePage() {
   const [expanded, setExpanded] = useState<Menu>('none');
   const [artist, setArtist] = useState<string | null>(null);
 
+  // maybe some url flags
   // if (window.location.host.includes('runpod')) {
-  //   const data = {
-  //     url: window.location.origin.replace("http", "ws") + "/ws",
-  //     message: '',
-  //   };
+    const data = {
+      url: window.location.origin.replace("http", "ws") + "/ws",
+      message: '',
+    };
   // } 
   // else if (process.env.NEXT_PUBLIC_MIRRORFRAME_URL) {
   //   const data = {status: 'ready', url: process.env.NEXT_PUBLIC_MIRRORFRAME_URL, message: ''}
   // } else {
-  const { data, mutate } = useSWRImmutable('https://metamirror.fly.dev/get_url', (url) =>
-    fetch(url).then((r) => r.json())
-  );
+  // const { data, mutate } = useSWRImmutable('https://metamirror.fly.dev/get_url', (url) =>
+  //   fetch(url).then((r) => r.json())
+  // );
 
-  useEffect(() => {
-    if (data?.status !== 'ready') {
-      setTimeout(() => mutate(), 500);
-    }
-  }, [data, mutate]);
+  // useEffect(() => {
+  //   if (data?.status !== 'ready') {
+  //     setTimeout(() => mutate(), 500);
+  //   }
+  // }, [data, mutate]);
   // }
 
   const ws = useMemo(() => {
