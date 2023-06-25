@@ -274,6 +274,12 @@ export default function HomePage() {
       </div>
     </div>
   );
+  // TODO: demo information, possibly behind a flag
+  // steps, it/s
+  // machine
+  // price
+  // location
+  // decompression / start time
 
   const leftSideBar = (
     <div
