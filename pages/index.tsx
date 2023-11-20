@@ -6,6 +6,7 @@ import { Input } from '../components/input';
 import { Navbar } from '../components/navbar';
 import { ExpandButton, Menu } from '../components/expand_button';
 import { ArtistPane } from '../components/panes/artists';
+import { set } from 'animejs';
 
 const leftMenus: Menu[] = ['history']; //, 'params'];
 const rightMenus: Menu[] = ['artists'];
@@ -79,6 +80,26 @@ function CrossFadedImages({ fadeState }: { fadeState: FadeState }) {
     </div>
   );
 }
+function useConnection<T>(connect: () => T | null, setup: (T) => void): T | null {
+  const conn = useMemo(connect, []);
+  useEffect(() => {
+    if (conn) {
+      setup(conn);
+    }
+  }, [conn]);
+  return conn;
+}
+
+export function useWS(setupHandler: (ws: WebSocket) => void): WebSocket | null {
+  return useConnection(() => {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+    const window_url =
+      (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws';
+    return new WebSocket(process.env.NEXT_PUBLIC_MIRRORFRAME_URL ?? window_url);
+  }, setupHandler);
+}
 
 export default function HomePage() {
   const inputEl = useRef(null);
@@ -102,71 +123,60 @@ export default function HomePage() {
 
   const isBrowser = typeof window !== 'undefined';
 
-  const ws = useMemo(() => {
-    if (typeof window === 'undefined') {
-      return null;
-    }
-    const window_url =
-      (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws';
-    return new WebSocket(process.env.NEXT_PUBLIC_MIRRORFRAME_URL ?? window_url);
-  }, []);
-
-  useEffect(() => {
-    if (ws) {
-      // ws.addEventListener('open', (event) => {
-      //   console.log('ws opened');
-      //   getAndSendPrompt();
-      // });
-      ws.addEventListener('message', async ({ data }) => {
-        if (data.substring(0, 4) === 'pong') {
-          // if (Math.random() < 0.1) {
-          //   // sample 10% of pings
-          //   var elapsed_ms = (Date.now() % 86400000) - parseInt(data.substring(5), 10);
-          //   console.log('ws RTT ' + elapsed_ms + ' ms\n');
-          // }
-        } else {
-          let parsed = JSON.parse(data);
-          setFadeState((fadeState) => {
-            console.log('fadeState is', fadeState);
-            const imageUpdate = fadeState.topVisible
-              ? { bottomImage: parsed.image }
-              : { topImage: parsed.image };
-            return {
-              ...fadeState,
-              ...imageUpdate,
-              topVisible: !fadeState.topVisible,
-              bottomVisible: !fadeState.bottomVisible,
-            };
-          });
-          setSocketState('ready');
-          console.timeEnd('generate');
-          console.log(
-            'last sent',
-            lastSent,
-            'actual sent time',
-            parsed.id,
-            'now',
-            Date.now(),
-            'e2e latency:',
-            Date.now() - parsed.id,
-            'gen:',
-            parsed.gen_time
-          );
-          setLatency({
-            gen: parsed.gen_time,
-            net: Date.now() - parsed.id - parsed.gen_time,
-          });
-        }
-      });
-      setInterval(function () {
-        if (ws.readyState === 1) {
-          var message = 'ping ' + (Date.now() % 86400000);
-          ws.send(message);
-        }
-      }, 2000);
-      // setInterval(() => onPromptChange(prompt), 2000);
-    }
-  }, [ws]);
+  const ws = useWS((ws) => {
+    // ws.addEventListener('open', (event) => {
+    //   console.log('ws opened');
+    //   getAndSendPrompt();
+    // });
+    ws.addEventListener('message', async ({ data }) => {
+      if (data.substring(0, 4) === 'pong') {
+        // if (Math.random() < 0.1) {
+        //   // sample 10% of pings
+        //   var elapsed_ms = (Date.now() % 86400000) - parseInt(data.substring(5), 10);
+        //   console.log('ws RTT ' + elapsed_ms + ' ms\n');
+        // }
+      } else {
+        let parsed = JSON.parse(data);
+        setFadeState((fadeState) => {
+          console.log('fadeState is', fadeState);
+          const imageUpdate = fadeState.topVisible
+            ? { bottomImage: parsed.image }
+            : { topImage: parsed.image };
+          return {
+            ...fadeState,
+            ...imageUpdate,
+            topVisible: !fadeState.topVisible,
+            bottomVisible: !fadeState.bottomVisible,
+          };
+        });
+        setSocketState('ready');
+        console.timeEnd('generate');
+        console.log(
+          'last sent',
+          lastSent,
+          'actual sent time',
+          parsed.id,
+          'now',
+          Date.now(),
+          'e2e latency:',
+          Date.now() - parsed.id,
+          'gen:',
+          parsed.gen_time
+        );
+        setLatency({
+          gen: parsed.gen_time,
+          net: Date.now() - parsed.id - parsed.gen_time,
+        });
+      }
+    });
+    setInterval(function () {
+      if (ws.readyState === 1) {
+        var message = 'ping ' + (Date.now() % 86400000);
+        ws.send(message);
+      }
+    }, 2000);
+    // setInterval(() => onPromptChange(prompt), 2000);
+  });
 
   /* When artist changes, fire onPromptChange */
   useEffect(() => {
