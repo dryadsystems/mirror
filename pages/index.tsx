@@ -103,7 +103,7 @@ export default function HomePage() {
   // maybe some url flags
   // if (window.location.host.includes('runpod')) {
     const data = {
-      url: window.location.origin.replace("http", "ws") + "/ws",
+      url: (typeof window === 'undefined' ? "" : window.location.origin.replace("http", "ws") + "/ws"),
       message: '',
     };
   // } 
@@ -124,7 +124,7 @@ export default function HomePage() {
   const ws = useMemo(() => {
     console.log(data);
     if (typeof window === 'undefined') return null;
-    if (data?.status !== 'ready') return null;
+    // if (data?.status !== 'ready') return null;
 
     // const window_url =
     //   (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws';
