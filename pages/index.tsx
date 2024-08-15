@@ -103,7 +103,7 @@ export default function HomePage() {
   // maybe some url flags
   // if (window.location.host.includes('runpod')) {
     const data = {
-      url: (typeof window === 'undefined' ? "" : window.location.origin.replace("http", "ws") + "/ws"),
+      url: (typeof window === 'undefined' ? "" : window.location.origin), //.replace("http", "ws") + "/ws"),
       message: '',
     };
   // } 
@@ -216,7 +216,8 @@ export default function HomePage() {
         setLastSent((x) => {
           return { prompt: promptWithArtist, time: Date.now() };
         });
-        const params = { prompt: promptWithArtist, id: Date.now(), ddim_steps: 35 };
+        // const params = { prompt: promptWithArtist, id: Date.now(), ddim_steps: 4 };
+        const params = { prompt: promptWithArtist, id: Date.now() };
         updateSentLog((log) => [...log, params]);
         console.log('Sending', params);
         console.time('generate');
